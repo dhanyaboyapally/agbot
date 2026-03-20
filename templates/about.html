@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}AGBOT - About{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <div class="hero-section">
+        <div class="hero-content">
+            <i class="fas fa-leaf hero-icon"></i>
+            <h1>AGBOT</h1>
+            <p class="tagline">From Data to Harvest: Smarter Solutions for Farmers</p>
+        </div>
+    </div>
+
+    <div class="about-content">
+        <!-- Mission Statement -->
+        <section class="mission-section">
+            <div class="section-icon">
+                <i class="fas fa-bullseye"></i>
+            </div>
+            <h2>Mission Statement</h2>
+            <p>Our mission is to empower farmers and agricultural communities with intelligent, accessible, and sustainable technology that improves plant health monitoring and pest management. By combining artificial intelligence with mobile-first design, we aim to reduce crop losses, lower pesticide use, and promote food security.</p>
+        </section>
+
+        <!-- Core Innovation -->
+        <section class="innovation-section">
+            <div class="section-icon">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+            <h2>Core Innovation</h2>
+            <p>AGBOT pioneers a <strong>Damage-to-Insect Causality Engine</strong> that identifies specific insect species from leaf damage patterns. Unlike apps that only detect diseases, we answer the critical question: <em>"What pest caused this damage?"</em></p>
+            <div class="highlight-box">
+                This enables targeted, IPM-compliant treatments that reduce pesticide misuse and support sustainable farming.
+            </div>
+        </section>
+
+        <!-- Our Team -->
+        <section class="team-section">
+            <h2><i class="fas fa-users"></i> Our Team</h2>
+            <div class="team-grid">
+                {% for member in team %}
+                <div class="team-member">
+                    <div class="member-icon {{ member.type.lower() }}">
+                        <i class="fas fa-{{ 'laptop-code' if member.type == 'Computer' else 'server' if member.type == 'Backend' else 'paint-brush' if member.type == 'Frontend' else 'robot' }}"></i>
+                    </div>
+                    <h3>{{ member.name }}</h3>
+                    <p>{{ member.role }}</p>
+                    <div class="member-badge {{ member.type.lower() }}">{{ member.type }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Mentor -->
+        <section class="mentor-section">
+            <h2><i class="fas fa-graduation-cap"></i> Mentor</h2>
+            <div class="mentor-card">
+                <h3>Professor Noel Aloysius</h3>
+                <p>College of Agriculture, Food, and Natural Resources (CAFNR), University of Missouri</p>
+            </div>
+        </section>
+
+        <!-- Technology Stack -->
+        <section class="tech-section">
+            <h2>Technology</h2>
+            <div class="tech-badges">
+                <span class="tech-badge">React Native</span>
+                <span class="tech-badge">TensorFlow Lite</span>
+                <span class="tech-badge">PyTorch</span>
+                <span class="tech-badge">FastAPI</span>
+                <span class="tech-badge">PostgreSQL</span>
+            </div>
+        </section>
+
+        <!-- Performance Metrics -->
+        <section class="metrics-section">
+            <div class="metrics-grid">
+                <div class="metric">
+                    <h3>Detection Time</h3>
+                    <div class="metric-value">&lt;3 seconds</div>
+                </div>
+                <div class="metric">
+                    <h3>Accuracy</h3>
+                    <div class="metric-value">98%+</div>
+                </div>
+                <div class="metric">
+                    <h3>Offline Mode</h3>
+                    <div class="metric-value">Full support</div>
+                </div>
+                <div class="metric">
+                    <h3>IPM Aligned</h3>
+                    <div class="metric-value">100%</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Environmental Impact -->
+        <section class="impact-section">
+            <h2>Environmental Impact</h2>
+            <div class="impact-list">
+                <div class="impact-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>40% reduction in pesticide use through precise diagnosis</span>
+                </div>
+                <div class="impact-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Protects beneficial insects and soil health</span>
+                </div>
+                <div class="impact-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Reduces crop losses and promotes food security</span>
+                </div>
+                <div class="impact-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Empowers sustainable agricultural practices</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact -->
+        <section class="contact-section">
+            <h2>Connect With Us</h2>
+            <div class="contact-buttons">
+                <a href="#" class="contact-btn email">
+                    <i class="fas fa-envelope"></i> Email Us
+                </a>
+                <a href="#" class="contact-btn github">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="#" class="contact-btn linkedin">
+                    <i class="fab fa-linkedin"></i> LinkedIn
+                </a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

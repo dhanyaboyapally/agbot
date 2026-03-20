@@ -1,0 +1,455 @@
+{% extends "base.html" %}
+
+{% block title %}AGBOT - Scan History{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <div class="history-header">
+        <div class="header-content">
+            <h1>Scan History</h1>
+            <p>Review your past plant health assessments</p>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="history-stats">
+        <div class="stat-item">
+            <div class="stat-number">{{ stats.total_scans }}</div>
+            <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-item pest">
+            <div class="stat-number">{{ stats.pests_found }}</div>
+            <div class="stat-label">Pests Found</div>
+        </div>
+        <div class="stat-item healthy">
+            <div class="stat-number">{{ stats.healthy }}</div>
+            <div class="stat-label">Healthy</div>
+        </div>
+    </div>
+
+    <!-- Filters and Export -->
+    <div class="history-toolbar">
+        <div class="filter-section">
+            <div class="filter-group">
+                <label><i class="fas fa-filter"></i> Status:</label>
+                <select id="filterStatus" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="healthy">Healthy</option>
+                    <option value="mild">Mild</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="severe">Severe</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-calendar"></i> Date Range:</label>
+                <select id="filterDate" class="filter-select">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-search"></i> Search:</label>
+                <input type="text" id="searchInput" class="filter-input" placeholder="Search by plant or pest...">
+            </div>
+            <button class="filter-clear" onclick="clearFilters()">
+                <i class="fas fa-times-circle"></i> Clear Filters
+            </button>
+        </div>
+        <div class="export-section">
+            <button class="export-btn" onclick="exportData('csv')">
+                <i class="fas fa-file-csv"></i> Export CSV
+            </button>
+            <button class="export-btn" onclick="exportData('json')">
+                <i class="fas fa-file-code"></i> Export JSON
+            </button>
+            <button class="export-btn" onclick="exportData('pdf')">
+                <i class="fas fa-file-pdf"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Recent Scans -->
+    <div class="history-content">
+        <div class="section-header">
+            <h2>Recent Scans <span id="resultCount">({{ history|length }})</span></h2>
+            <div class="view-options">
+                <button class="view-toggle active" data-view="list" onclick="toggleView('list')">
+                    <i class="fas fa-list"></i>
+                </button>
+                <button class="view-toggle" data-view="grid" onclick="toggleView('grid')">
+                    <i class="fas fa-th"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="scan-list" id="scanList">
+            {% for scan in history %}
+            <div class="scan-item">
+                <div class="scan-icon {{ 'healthy' if scan.severity == 'Healthy' else 'pest' }}">
+                    <i class="fas fa-{{ 'leaf' if scan.severity == 'Healthy' else 'bug' }}"></i>
+                </div>
+                <div class="scan-details">
+                    <h3>{{ scan.plant }}</h3>
+                    <p>{{ scan.pest }}</p>
+                    <div class="scan-meta">
+                        <span><i class="far fa-calendar"></i> {{ scan.date }}</span>
+                        <span><i class="far fa-clock"></i> {{ scan.time }}</span>
+                    </div>
+                </div>
+                <div class="severity-badge {{ scan.severity.lower() }}">
+                    {{ scan.severity }}
+                </div>
+                <button class="view-details">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Weekly Insight -->
+        <div class="insight-card">
+            <div class="insight-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="insight-content">
+                <h3>Weekly Insight</h3>
+                <p>Aphid activity has increased by 15% this week. Consider preventive measures for vulnerable crops.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.history-toolbar {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.filter-select, .filter-input {
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.filter-input {
+    min-width: 200px;
+}
+
+.filter-clear {
+    background: white;
+    color: var(--text-secondary);
+    border: 2px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.filter-clear:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.export-section {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.export-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.export-btn:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3);
+}
+
+.view-options {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.view-toggle {
+    background: white;
+    border: 2px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-toggle.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.scan-list.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.scan-list.grid-view .scan-item {
+    flex-direction: column;
+    text-align: center;
+}
+
+.scan-list.grid-view .scan-icon {
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .filter-section {
+        flex-direction: column;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-input {
+        width: 100%;
+    }
+
+    .filter-clear {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .export-section {
+        flex-direction: column;
+    }
+
+    .export-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+let allScans = {{ history|tojson }};
+let filteredScans = [...allScans];
+
+// View details functionality
+document.querySelectorAll('.view-details').forEach(button => {
+    button.addEventListener('click', (e) => {
+        alert('Detailed view coming soon!');
+    });
+});
+
+// Filter functions
+document.getElementById('filterStatus').addEventListener('change', applyFilters);
+document.getElementById('filterDate').addEventListener('change', applyFilters);
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+function applyFilters() {
+    const statusFilter = document.getElementById('filterStatus').value.toLowerCase();
+    const dateFilter = document.getElementById('filterDate').value;
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+    filteredScans = allScans.filter(scan => {
+        // Status filter
+        if (statusFilter !== 'all' && scan.severity.toLowerCase() !== statusFilter) {
+            return false;
+        }
+
+        // Date filter
+        if (dateFilter !== 'all') {
+            const scanDate = new Date(scan.date);
+            const today = new Date();
+            const daysDiff = Math.floor((today - scanDate) / (1000 * 60 * 60 * 24));
+
+            if (dateFilter === 'today' && daysDiff > 0) return false;
+            if (dateFilter === 'week' && daysDiff > 7) return false;
+            if (dateFilter === 'month' && daysDiff > 30) return false;
+        }
+
+        // Search filter
+        if (searchTerm && !scan.plant.toLowerCase().includes(searchTerm) && !scan.pest.toLowerCase().includes(searchTerm)) {
+            return false;
+        }
+
+        return true;
+    });
+
+    updateScanList();
+}
+
+function updateScanList() {
+    const scanList = document.getElementById('scanList');
+    const resultCount = document.getElementById('resultCount');
+
+    if (filteredScans.length === 0) {
+        scanList.innerHTML = '<div class="no-results"><i class="fas fa-search"></i><p>No scans found matching your filters</p></div>';
+        resultCount.textContent = '(0)';
+        return;
+    }
+
+    scanList.innerHTML = filteredScans.map(scan => `
+        <div class="scan-item">
+            <div class="scan-icon ${scan.severity === 'Healthy' ? 'healthy' : 'pest'}">
+                <i class="fas fa-${scan.severity === 'Healthy' ? 'leaf' : 'bug'}"></i>
+            </div>
+            <div class="scan-details">
+                <h3>${scan.plant}</h3>
+                <p>${scan.pest}</p>
+                <div class="scan-meta">
+                    <span><i class="far fa-calendar"></i> ${scan.date}</span>
+                    <span><i class="far fa-clock"></i> ${scan.time}</span>
+                </div>
+            </div>
+            <div class="severity-badge ${scan.severity.toLowerCase()}">
+                ${scan.severity}
+            </div>
+            <button class="view-details">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    `).join('');
+
+    resultCount.textContent = `(${filteredScans.length})`;
+
+    // Reattach event listeners
+    document.querySelectorAll('.view-details').forEach(button => {
+        button.addEventListener('click', () => alert('Detailed view coming soon!'));
+    });
+}
+
+function clearFilters() {
+    document.getElementById('filterStatus').value = 'all';
+    document.getElementById('filterDate').value = 'all';
+    document.getElementById('searchInput').value = '';
+    applyFilters();
+}
+
+function toggleView(view) {
+    const scanList = document.getElementById('scanList');
+    const toggleButtons = document.querySelectorAll('.view-toggle');
+
+    toggleButtons.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-view="${view}"]`).classList.add('active');
+
+    if (view === 'grid') {
+        scanList.classList.add('grid-view');
+    } else {
+        scanList.classList.remove('grid-view');
+    }
+}
+
+function exportData(format) {
+    // Prepare data for export
+    const exportData = filteredScans.map(scan => ({
+        Plant: scan.plant,
+        Pest: scan.pest,
+        Severity: scan.severity,
+        Date: scan.date,
+        Time: scan.time
+    }));
+
+    if (format === 'csv') {
+        exportToCSV(exportData);
+    } else if (format === 'json') {
+        exportToJSON(exportData);
+    } else if (format === 'pdf') {
+        alert('PDF export requires a backend endpoint. Redirecting to API...');
+        window.location.href = '/api/export/scans?format=pdf';
+    }
+}
+
+function exportToCSV(data) {
+    if (data.length === 0) {
+        alert('No data to export');
+        return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => `"${row[header]}"`).join(','))
+    ].join('\n');
+
+    downloadFile(csvContent, 'scan-history.csv', 'text/csv');
+}
+
+function exportToJSON(data) {
+    if (data.length === 0) {
+        alert('No data to export');
+        return;
+    }
+
+    const jsonContent = JSON.stringify(data, null, 2);
+    downloadFile(jsonContent, 'scan-history.json', 'application/json');
+}
+
+function downloadFile(content, filename, contentType) {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

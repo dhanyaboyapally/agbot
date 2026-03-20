@@ -1,0 +1,931 @@
+{% extends "base.html" %}
+{% block title %}Settings - AGBOT{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="settings-header">
+        <i class="fas fa-cog"></i>
+        <div>
+            <h1>Settings</h1>
+            <p>Manage your account and preferences</p>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Tab Navigation -->
+    <div class="settings-tabs">
+        <button class="settings-tab active" data-tab="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile Information</span>
+        </button>
+        <button class="settings-tab" data-tab="preferences">
+            <i class="fas fa-sliders-h"></i>
+            <span>App Preferences</span>
+        </button>
+        <button class="settings-tab" data-tab="notifications">
+            <i class="fas fa-bell"></i>
+            <span>Notifications</span>
+        </button>
+        <button class="settings-tab" data-tab="security">
+            <i class="fas fa-shield-alt"></i>
+            <span>Account Security</span>
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="settings-content">
+        <!-- Profile Information Tab -->
+        <div class="tab-panel active" id="profile">
+            <div class="settings-section">
+                <h2><i class="fas fa-user"></i> Profile Information</h2>
+                <form method="POST" action="{{ url_for('update_profile') }}" class="settings-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ current_user.name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-envelope"></i> Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ current_user.email }}" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-phone"></i> Phone</label>
+                            <input type="tel" name="phone" class="form-control" value="{{ current_user.phone or '' }}" placeholder="+1-555-0123">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-map-marker-alt"></i> Location</label>
+                            <input type="text" name="location" class="form-control" value="{{ current_user.location or '' }}" placeholder="California, USA">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-tractor"></i> Farm Name</label>
+                            <input type="text" name="farm_name" class="form-control" placeholder="Green Valley Farm">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-expand-arrows-alt"></i> Farm Size</label>
+                            <select name="farm_size" class="form-control">
+                                <option value="">Select...</option>
+                                <option value="0-10">0-10 acres</option>
+                                <option value="10-50">10-50 acres</option>
+                                <option value="50-100">50-100 acres</option>
+                                <option value="100+">100+ acres</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-seedling"></i> Crops Grown</label>
+                        <div class="crops-grid">
+                            <label class="checkbox-label"><input type="checkbox" name="crops" value="corn"> Corn</label>
+                            <label class="checkbox-label"><input type="checkbox" name="crops" value="soybean"> Soybean</label>
+                            <label class="checkbox-label"><input type="checkbox" name="crops" value="wheat"> Wheat</label>
+                            <label class="checkbox-label"><input type="checkbox" name="crops" value="rice"> Rice</label>
+                            <label class="checkbox-label"><input type="checkbox" name="crops" value="cotton"> Cotton</label>
+                            <label class="checkbox-label"><input type="checkbox" name="crops" value="tomato"> Tomato</label>
+                        </div>
+                        <div class="custom-crop-section">
+                            <input type="text" id="customCropInput" class="form-control" placeholder="Add custom crop..." style="margin-top: 1rem;">
+                            <button type="button" class="btn-secondary" onclick="addCustomCrop()" style="margin-top: 0.5rem;">
+                                <i class="fas fa-plus"></i> Add Crop
+                            </button>
+                        </div>
+                        <div id="customCropsContainer" class="crops-grid" style="margin-top: 1rem;"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="window.location.reload()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- App Preferences Tab -->
+        <div class="tab-panel" id="preferences">
+            <div class="settings-section">
+                <h2><i class="fas fa-sliders-h"></i> App Preferences</h2>
+                <form method="POST" action="{{ url_for('update_preferences') }}" class="settings-form">
+                    <div class="form-group">
+                        <label><i class="fas fa-globe"></i> Language</label>
+                        <select name="language" class="form-control" id="languageSelect">
+                            <option value="en" {{ 'selected' if current_user.language == 'en' }}>English</option>
+                            <option value="es" {{ 'selected' if current_user.language == 'es' }}>Español</option>
+                            <option value="hi" {{ 'selected' if current_user.language == 'hi' }}>हिन्दी</option>
+                            <option value="sw" {{ 'selected' if current_user.language == 'sw' }}>Kiswahili</option>
+                        </select>
+                        <small>Changes take effect immediately</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-palette"></i> Theme</label>
+                        <select name="theme" class="form-control">
+                            <option value="emerald" {{ 'selected' if current_user.theme == 'emerald' }}>Emerald (Default)</option>
+                            <option value="forest" {{ 'selected' if current_user.theme == 'forest' }}>Forest</option>
+                            <option value="ocean" {{ 'selected' if current_user.theme == 'ocean' }}>Ocean</option>
+                            <option value="sunset" {{ 'selected' if current_user.theme == 'sunset' }}>Sunset</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-subsection">
+                        <h3><i class="fas fa-desktop"></i> Display Settings</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="show_confidence" checked>
+                                <span>Show confidence scores</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="show_charts" checked>
+                                <span>Show charts on dashboard</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="compact_view">
+                                <span>Compact view mode</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="auto_refresh">
+                                <span>Auto-refresh dashboard</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="helper_tips" checked>
+                                <span>Show helper tips</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="animations" checked>
+                                <span>Enable animations</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-subsection">
+                        <h3><i class="fas fa-database"></i> Data Settings</h3>
+                        <div class="form-group">
+                            <label>Scan History Retention</label>
+                            <select name="history_retention" class="form-control">
+                                <option value="30">30 days</option>
+                                <option value="60" selected>60 days</option>
+                                <option value="90">90 days</option>
+                                <option value="180">6 months</option>
+                                <option value="365">1 year</option>
+                                <option value="forever">Forever</option>
+                            </select>
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="cloud_backup" checked>
+                            <span>Automatic cloud backup</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Preferences
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div class="tab-panel" id="notifications">
+            <div class="settings-section">
+                <h2><i class="fas fa-bell"></i> Notifications</h2>
+                <form method="POST" action="{{ url_for('update_notifications') }}" class="settings-form">
+                    <div class="settings-subsection">
+                        <h3><i class="fas fa-envelope"></i> Email Notifications</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_pest_alerts" {{ 'checked' if current_user.notification_email }}>
+                                <span><i class="fas fa-bug"></i> Pest detection alerts</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_weekly_reports" {{ 'checked' if current_user.notification_email }}>
+                                <span><i class="fas fa-chart-bar"></i> Weekly summary reports</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_weather" {{ 'checked' if current_user.notification_email }}>
+                                <span><i class="fas fa-cloud-sun"></i> Weather alerts</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_system">
+                                <span><i class="fas fa-bell"></i> System updates</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_farming_tips" {{ 'checked' if current_user.notification_email }}>
+                                <span><i class="fas fa-lightbulb"></i> Farming tips</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_promotions">
+                                <span><i class="fas fa-gift"></i> Promotions & offers</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_newsletter" {{ 'checked' if current_user.notification_email }}>
+                                <span><i class="fas fa-envelope"></i> Newsletter</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email_scan_reminders" {{ 'checked' if current_user.notification_email }}>
+                                <span><i class="fas fa-clock"></i> Scan reminders</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-subsection">
+                        <h3><i class="fas fa-mobile-alt"></i> Push Notifications</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="push_enabled" checked>
+                            <span>Enable push notifications</span>
+                        </label>
+                        <div class="checkbox-group" style="margin-left: 2rem;">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="push_high_severity" checked>
+                                <span>High severity pest alerts</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="push_scan_complete" checked>
+                                <span>Scan completion</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="push_weather" checked>
+                                <span>Critical weather warnings</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="push_farming_tips">
+                                <span>Daily farming tips</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-subsection">
+                        <h3><i class="fas fa-moon"></i> Quiet Hours</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="quiet_hours_enabled" checked>
+                            <span>Enable quiet hours</span>
+                        </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Time</label>
+                                <input type="time" name="quiet_start" class="form-control" value="22:00">
+                            </div>
+                            <div class="form-group">
+                                <label>End Time</label>
+                                <input type="time" name="quiet_end" class="form-control" value="07:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Notification Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Account Security Tab -->
+        <div class="tab-panel" id="security">
+            <div class="settings-section">
+                <h2><i class="fas fa-shield-alt"></i> Account Security</h2>
+
+                <!-- Change Password -->
+                <div class="settings-subsection">
+                    <h3><i class="fas fa-key"></i> Change Password</h3>
+                    <form method="POST" action="{{ url_for('update_security') }}" class="settings-form">
+                        <div class="form-group">
+                            <label>Current password</label>
+                            <input type="password" name="current_password" class="form-control" placeholder="Enter current password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>New password (min. 8 characters)</label>
+                            <input type="password" name="new_password" class="form-control" placeholder="Enter new password" minlength="8" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm new password</label>
+                            <input type="password" name="confirm_new_password" class="form-control" placeholder="Re-enter new password" required>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-lock"></i> Update Password
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Two-Factor Authentication -->
+                <div class="settings-subsection">
+                    <h3><i class="fas fa-mobile-alt"></i> Two-Factor Authentication</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="enable_2fa">
+                        <span>Enable Two-Factor Authentication (2FA)</span>
+                    </label>
+                    <p class="help-text">Add an extra layer of security to your account</p>
+                </div>
+
+                <!-- Active Sessions -->
+                <div class="settings-subsection">
+                    <h3><i class="fas fa-laptop"></i> Active Sessions</h3>
+                    <div class="sessions-list">
+                        <div class="session-item current">
+                            <div class="session-icon"><i class="fas fa-desktop"></i></div>
+                            <div class="session-info">
+                                <strong>Windows PC</strong>
+                                <p>{{ current_user.location or 'Unknown' }} • Just now</p>
+                                <small>192.168.1.1</small>
+                            </div>
+                            <span class="current-badge">Current</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-danger" onclick="alert('All other sessions logged out')">
+                        <i class="fas fa-sign-out-alt"></i> Logout All Other Sessions
+                    </button>
+                </div>
+
+                <!-- Data Export -->
+                <div class="settings-subsection">
+                    <h3><i class="fas fa-download"></i> Data Export</h3>
+                    <p>Download all your data in JSON format</p>
+                    <div class="export-buttons">
+                        <button type="button" class="btn-secondary" onclick="window.location.href='/api/export/scans'">
+                            <i class="fas fa-file-download"></i> Export Scan History
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="window.location.href='/api/export/profile'">
+                            <i class="fas fa-file-download"></i> Export Profile Data
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-subsection danger-zone">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                    <p class="warning-text">⚠️ Once you delete your account, there is no going back. Please be certain.</p>
+                    <button type="button" class="btn-danger" onclick="confirmDeleteAccount()">
+                        <i class="fas fa-trash-alt"></i> Delete My Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.settings-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+@media (max-width: 768px) {
+    .settings-page {
+        padding: 1rem 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-page {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.settings-header i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+}
+
+.settings-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.settings-header p {
+    margin: 0.25rem 0 0 0;
+    color: var(--text-secondary);
+}
+
+.settings-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.settings-tab {
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.settings-tab i {
+    font-size: 1.25rem;
+}
+
+.settings-tab:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
+}
+
+.settings-tab.active {
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+    color: white;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.settings-section {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+@media (max-width: 768px) {
+    .settings-section {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-section {
+        padding: 1rem;
+        border-radius: 0.75rem;
+    }
+}
+
+.settings-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+.settings-subsection {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.settings-subsection h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-control {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.form-control:read-only {
+    background: var(--background);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.crops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: background 0.2s;
+}
+
+.checkbox-label:hover {
+    background: #f9fafb;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.custom-crop-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.remove-crop {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    margin-left: auto;
+    transition: color 0.2s;
+}
+
+.remove-crop:hover {
+    color: #ef4444;
+}
+
+.help-text {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.session-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--card-bg);
+}
+
+.session-item.current {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.session-icon {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.session-info {
+    flex: 1;
+}
+
+.session-info strong {
+    color: var(--text-primary);
+}
+
+.session-info p {
+    margin: 0.25rem 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.session-info small {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.current-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.danger-zone {
+    background: #fef2f2;
+    border: 2px solid #fca5a5;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.warning-text {
+    color: #991b1b;
+    margin: 0.5rem 0 1rem 0;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.btn-secondary {
+    background: var(--background);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: var(--card-bg);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+}
+
+.alert-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+}
+
+@media (max-width: 768px) {
+    .settings-tabs {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .settings-tab {
+        padding: 0.875rem;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-primary, .btn-secondary, .btn-danger {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .settings-header {
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-tabs {
+        gap: 0.5rem;
+    }
+
+    .settings-tab {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .settings-tab i {
+        font-size: 1rem;
+    }
+
+    .settings-section h2 {
+        font-size: 1.25rem;
+    }
+
+    .settings-subsection h3 {
+        font-size: 1rem;
+    }
+}
+</style>
+
+<script>
+// Tab switching
+document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+
+        // Remove active class from all tabs and panels
+        document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+        // Add active class to clicked tab and corresponding panel
+        tab.classList.add('active');
+        document.getElementById(targetTab).classList.add('active');
+    });
+});
+
+// Language change confirmation
+document.getElementById('languageSelect')?.addEventListener('change', function() {
+    if (confirm('Change language now? This will reload the page.')) {
+        this.form.submit();
+    }
+});
+
+// Delete account confirmation
+function confirmDeleteAccount() {
+    if (confirm('Are you absolutely sure? This action cannot be undone.')) {
+        if (confirm('This will permanently delete all your data. Continue?')) {
+            alert('Account deletion requested. Please contact support to complete this process.');
+        }
+    }
+}
+
+// Custom crop management
+function addCustomCrop() {
+    const input = document.getElementById('customCropInput');
+    const cropName = input.value.trim();
+
+    if (!cropName) {
+        alert('Please enter a crop name');
+        return;
+    }
+
+    const container = document.getElementById('customCropsContainer');
+    const cropId = 'crop-' + Date.now();
+
+    const cropLabel = document.createElement('label');
+    cropLabel.className = 'checkbox-label custom-crop-item';
+    cropLabel.innerHTML = `
+        <input type="checkbox" name="crops" value="${cropName}" checked>
+        ${cropName}
+        <button type="button" class="remove-crop" onclick="removeCustomCrop(this)" title="Remove">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    container.appendChild(cropLabel);
+    input.value = '';
+}
+
+function removeCustomCrop(button) {
+    button.closest('.custom-crop-item').remove();
+}
+
+// Load saved crops on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Get saved crops from server (if any)
+    const savedCrops = '{{ current_user.crops or "" }}'.split(',').filter(c => c.trim());
+
+    // Check predefined crops
+    document.querySelectorAll('input[name="crops"]').forEach(checkbox => {
+        if (savedCrops.includes(checkbox.value)) {
+            checkbox.checked = true;
+        }
+    });
+
+    // Add custom crops (those not in predefined list)
+    const predefinedCrops = ['corn', 'soybean', 'wheat', 'rice', 'cotton', 'tomato'];
+    const customCrops = savedCrops.filter(crop => !predefinedCrops.includes(crop));
+
+    const container = document.getElementById('customCropsContainer');
+    customCrops.forEach(cropName => {
+        if (cropName) {
+            const cropLabel = document.createElement('label');
+            cropLabel.className = 'checkbox-label custom-crop-item';
+            cropLabel.innerHTML = `
+                <input type="checkbox" name="crops" value="${cropName}" checked>
+                ${cropName}
+                <button type="button" class="remove-crop" onclick="removeCustomCrop(this)" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(cropLabel);
+        }
+    });
+});
+</script>
+{% endblock %}

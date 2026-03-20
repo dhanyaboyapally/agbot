@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}AGBOT - Analysis Results{% endblock %}
+
+{% block content %}
+<div class="results-page">
+    <div class="results-header">
+        <button class="back-button" onclick="window.location.href='{{ url_for('index') }}'">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1>Analysis Results</h1>
+    </div>
+
+    <div class="results-container">
+        <!-- Image and Status -->
+        <div class="result-image-section">
+            <img src="{{ url_for('static', filename='uploads/latest_scan.jpg') }}" alt="Analyzed plant" 
+                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2224%22 fill=%22%23999%22%3EPlant Image%3C/text%3E%3C/svg%3E'">
+            
+            <div class="scan-timestamp">
+                <i class="far fa-clock"></i> Plant Health Status
+                <br>{{ timestamp }}
+            </div>
+        </div>
+
+        <!-- Confidence Level -->
+        <div class="confidence-section">
+            <div class="confidence-bar">
+                <div class="confidence-fill" style="width: {{ result.confidence }}%"></div>
+            </div>
+            <div class="confidence-text">
+                Confidence Level: {{ result.confidence }}%
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-section {{ 'healthy' if result.status == 'Healthy' else 'damaged' }}">
+            <div class="status-label">Status</div>
+            <div class="status-value">{{ result.status }}</div>
+        </div>
+
+        {% if result.pest_identified and result.pest_identified != 'None' %}
+        <!-- Pest Identification -->
+        <div class="identification-section">
+            <div class="pest-icon">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="pest-info">
+                <h2>Pest Identified</h2>
+                <h3>{{ result.pest_identified }}</h3>
+                <p class="scientific-name">({{ result.pest_scientific }})</p>
+            </div>
+        </div>
+
+        <!-- Damage Pattern -->
+        <div class="damage-section">
+            <h3>Damage Pattern</h3>
+            <p>{{ result.damage_pattern }}</p>
+        </div>
+
+        <!-- Treatment Recommendations -->
+        <div class="treatment-section">
+            <div class="treatment-tabs">
+                <button class="tab-button active" data-tab="immediate">
+                    <i class="fas fa-exclamation-circle"></i> Immediate Action
+                </button>
+                <button class="tab-button" data-tab="ipm">
+                    <i class="fas fa-shield-alt"></i> IPM Treatment
+                </button>
+                <button class="tab-button" data-tab="prevention">
+                    <i class="fas fa-hand-paper"></i> Prevention
+                </button>
+            </div>
+
+            <div class="treatment-content">
+                <div class="tab-content active" id="immediate">
+                    <h3>Immediate Action</h3>
+                    <ul>
+                        {% for action in result.treatments.immediate %}
+                        <li>{{ action }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="tab-content" id="ipm">
+                    <h3>IPM Treatment</h3>
+                    <ul>
+                        {% for treatment in result.treatments.ipm %}
+                        <li>{{ treatment }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="tab-content" id="prevention">
+                    <h3>Prevention</h3>
+                    <ul>
+                        {% for prevention in result.treatments.prevention %}
+                        <li>{{ prevention }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Section -->
+        {% if result.confidence < 75 %}
+        <div class="feedback-prompt">
+            <div class="feedback-header">
+                <i class="fas fa-question-circle"></i>
+                <h3>Is this correct?</h3>
+                <p>The AI confidence is {{ result.confidence }}%. Please help us verify this result.</p>
+            </div>
+
+            <div class="feedback-buttons">
+                <button class="btn-feedback btn-correct" onclick="submitFeedback(true)">
+                    <i class="fas fa-check"></i>
+                    Yes, looks correct
+                </button>
+                <button class="btn-feedback btn-incorrect" onclick="showCorrectionForm()">
+                    <i class="fas fa-times"></i>
+                    No, it's different
+                </button>
+            </div>
+
+            <div id="correctionForm" style="display: none;">
+                <div class="form-group">
+                    <label>What is the correct pest?</label>
+                    <select id="correctPest" class="form-control">
+                        <option value="">Select correct pest...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Additional notes (optional)</label>
+                    <textarea id="feedbackNotes" class="form-control" rows="3"></textarea>
+                </div>
+                <button class="btn-primary" onclick="submitCorrection()">Submit Feedback</button>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Healthy Plant Message -->
+        <div class="healthy-message">
+            <div class="healthy-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Great News!</h2>
+            <p>{{ result.message }}</p>
+            <div class="healthy-tips">
+                <h3>Keep Your Plants Healthy</h3>
+                <ul>
+                    <li>Continue regular monitoring</li>
+                    <li>Maintain proper watering schedule</li>
+                    <li>Ensure adequate sunlight</li>
+                    <li>Check neighboring plants for early signs</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="share-button">
+                <i class="fas fa-share-alt"></i> Share
+            </button>
+            <button class="save-button">
+                <i class="fas fa-save"></i> Save Report
+            </button>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <p><strong>Disclaimer:</strong> These recommendations are based on AI analysis and should be used alongside professional agricultural advice. Always follow local IPM guidelines and regulations.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.feedback-prompt {
+    background: #fffbeb;
+    border: 2px solid #fbbf24;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.feedback-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.feedback-header i {
+    font-size: 3rem;
+    color: #fbbf24;
+    margin-bottom: 0.5rem;
+}
+
+.feedback-header h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.feedback-header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.feedback-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-feedback {
+    flex: 1;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 2px solid;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.btn-correct {
+    background: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+}
+
+.btn-correct:hover {
+    background: #10b981;
+    color: white;
+}
+
+.btn-incorrect {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+}
+
+.btn-incorrect:hover {
+    background: #ef4444;
+    color: white;
+}
+
+#correctionForm {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #fbbf24;
+}
+
+#correctionForm .form-group {
+    margin-bottom: 1rem;
+}
+
+#correctionForm label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+#correctionForm .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+
+#correctionForm .form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+#correctionForm .btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#correctionForm .btn-primary:hover {
+    background: #059669;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .feedback-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+let currentScanId = null;
+
+// Tab functionality
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        // Remove active class from all tabs and contents
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        // Add active class to clicked tab and corresponding content
+        button.classList.add('active');
+        const tabId = button.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+
+// Share functionality
+document.querySelector('.share-button').addEventListener('click', () => {
+    if (navigator.share) {
+        navigator.share({
+            title: 'AGBOT Analysis Results',
+            text: 'Plant health analysis results from AGBOT',
+            url: window.location.href
+        });
+    } else {
+        alert('Sharing is not supported on this device');
+    }
+});
+
+// Save report functionality
+document.querySelector('.save-button').addEventListener('click', () => {
+    alert('Report saved successfully!');
+});
+
+// Feedback functions
+async function loadPests() {
+    try {
+        const response = await fetch('/api/pests?lang=en');
+        const pests = await response.json();
+        const select = document.getElementById('correctPest');
+        pests.forEach(pest => {
+            const option = document.createElement('option');
+            option.value = pest.common_name;
+            option.textContent = pest.common_name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading pests:', error);
+    }
+}
+
+function showCorrectionForm() {
+    document.getElementById('correctionForm').style.display = 'block';
+    loadPests();
+}
+
+async function submitFeedback(isCorrect) {
+    try {
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                scan_id: currentScanId,
+                is_correct: isCorrect
+            })
+        });
+
+        if (response.ok) {
+            showToast('Thank you for your feedback!', 'success');
+            document.querySelector('.feedback-prompt').style.display = 'none';
+        } else {
+            showToast('Failed to submit feedback', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        showToast('Error submitting feedback', 'error');
+    }
+}
+
+async function submitCorrection() {
+    const actualPest = document.getElementById('correctPest').value;
+    const notes = document.getElementById('feedbackNotes').value;
+
+    if (!actualPest) {
+        alert('Please select the correct pest');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                scan_id: currentScanId,
+                is_correct: false,
+                actual_pest_name: actualPest,
+                notes: notes
+            })
+        });
+
+        if (response.ok) {
+            showToast('Thank you for helping improve AGBOT!', 'success');
+            document.querySelector('.feedback-prompt').style.display = 'none';
+        } else {
+            showToast('Failed to submit correction', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting correction:', error);
+        showToast('Error submitting correction', 'error');
+    }
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

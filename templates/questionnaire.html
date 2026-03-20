@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}AGBOT - Pest Questionnaire{% endblock %}
+
+{% block content %}
+<div class="scan-page">
+    <div class="scan-header">
+        <button class="back-button" onclick="history.back()">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1>Identify by Questions</h1>
+    </div>
+
+    <div class="scan-container">
+        <!-- Progress -->
+        <div class="questionnaire-progress">
+            <div class="q-progress-bar">
+                <div class="q-progress-fill" id="progressFill" style="width: 20%"></div>
+            </div>
+            <span class="q-step" id="stepLabel">Question 1 of 5</span>
+        </div>
+
+        <!-- Question Card -->
+        <div class="question-card" id="questionCard">
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Navigation -->
+        <div class="q-nav">
+            <button class="secondary-button" id="prevBtn" disabled>
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <button class="primary-button" id="nextBtn">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+            <button class="analyze-button" id="identifyBtn" style="display:none;">
+                <i class="fas fa-search"></i> Identify Pest
+            </button>
+        </div>
+
+        <!-- Tips -->
+        <div class="photo-tips">
+            <h3><i class="fas fa-lightbulb"></i> Tips for Better Results</h3>
+            <ul>
+                <li>• Be as specific as possible about the damage you see</li>
+                <li>• Check both sides of the leaves</li>
+                <li>• Note the color and size of any insects</li>
+                <li>• Observe if damage is on leaves, stems, or fruit</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal" id="loadingModal" style="display: none;">
+        <div class="modal-content loading-content">
+            <div class="loader"></div>
+            <h3>Identifying Pest</h3>
+            <p>Analyzing your answers to find the best match...</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.questionnaire-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.q-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color, #e5e7eb);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.q-progress-fill {
+    height: 100%;
+    background: var(--primary-color, #16a34a);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.q-step {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+    white-space: nowrap;
+}
+
+.question-card {
+    background: var(--card-bg, white);
+    border: 2px solid var(--border-color, #e5e7eb);
+    border-radius: 1rem;
+    padding: 2rem;
+    min-height: 300px;
+    margin-bottom: 1.5rem;
+}
+
+.question-card h2 {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary, #111827);
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+.option-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-color, #f9fafb);
+    border: 2px solid var(--border-color, #e5e7eb);
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    color: var(--text-primary, #374151);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+}
+
+.option-btn:hover {
+    border-color: var(--primary-color, #16a34a);
+    background: rgba(22, 163, 74, 0.05);
+}
+
+.option-btn.selected {
+    border-color: var(--primary-color, #16a34a);
+    background: rgba(22, 163, 74, 0.1);
+    color: var(--primary-color, #16a34a);
+    font-weight: 600;
+}
+
+.option-btn .option-icon {
+    font-size: 1.3rem;
+    width: 32px;
+    text-align: center;
+}
+
+.q-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.q-nav button {
+    flex: 1;
+}
+
+@media (max-width: 640px) {
+    .question-card { padding: 1.25rem; }
+    .options-grid { gap: 0.5rem; }
+}
+</style>
+
+<script>
+const QUESTIONS = [
+    {
+        id: "location",
+        text: "Where is the damage most visible?",
+        options: [
+            {text: "On the leaves", value: "leaves", icon: "🍃"},
+            {text: "On the stems or branches", value: "stems", icon: "🌿"},
+            {text: "On the fruit or flower buds", value: "fruit", icon: "🍅"},
+            {text: "Near the soil or roots", value: "soil", icon: "🌱"}
+        ]
+    },
+    {
+        id: "appearance",
+        text: "What does the damage look like?",
+        options: [
+            {text: "Small holes or 'shot-holes'", value: "small_holes", icon: "🔴"},
+            {text: "Large chunks or entire leaves missing", value: "large_holes", icon: "🕳️"},
+            {text: "Yellowing, curling, or wilting", value: "yellowing", icon: "🟡"},
+            {text: "Sticky residue or black mold", value: "sticky", icon: "💧"},
+            {text: "White cottony or waxy clumps", value: "cottony", icon: "🤍"},
+            {text: "Winding trails inside the leaf", value: "trails", icon: "〰️"}
+        ]
+    },
+    {
+        id: "insects_visible",
+        text: "Can you see any insects on the plant?",
+        options: [
+            {text: "Yes, I can see insects", value: "yes", icon: "🐛"},
+            {text: "No, only the damage", value: "no", icon: "❌"}
+        ]
+    },
+    {
+        id: "insect_color",
+        text: "What color are the insects?",
+        condition: {insects_visible: "yes"},
+        options: [
+            {text: "Green or translucent", value: "green", icon: "🟢"},
+            {text: "White or powdery", value: "white", icon: "⚪"},
+            {text: "Black or dark brown", value: "black", icon: "⚫"},
+            {text: "Bright red or orange", value: "red", icon: "🔴"},
+            {text: "Shiny or metallic-looking", value: "metallic", icon: "✨"}
+        ]
+    },
+    {
+        id: "insect_shape",
+        text: "What is the general shape of the insects?",
+        condition: {insects_visible: "yes"},
+        options: [
+            {text: "Tiny dots or pear-shaped", value: "tiny", icon: "🔹"},
+            {text: "Long and worm-like", value: "long", icon: "🐛"},
+            {text: "Oval with a hard shell", value: "oval", icon: "🪲"},
+            {text: "Flat and scale-like", value: "flat", icon: "📏"}
+        ]
+    }
+];
+
+let currentIndex = 0;
+let answers = {};
+
+function getVisibleQuestions() {
+    return QUESTIONS.filter(q => {
+        if (!q.condition) return true;
+        return Object.entries(q.condition).every(([k, v]) => answers[k] === v);
+    });
+}
+
+function render() {
+    const visible = getVisibleQuestions();
+    const q = visible[currentIndex];
+    if (!q) return;
+
+    const card = document.getElementById('questionCard');
+    card.innerHTML = `
+        <h2>${q.text}</h2>
+        <div class="options-grid">
+            ${q.options.map(opt => `
+                <button class="option-btn ${answers[q.id] === opt.value ? 'selected' : ''}"
+                        onclick="selectOption('${q.id}', '${opt.value}')">
+                    <span class="option-icon">${opt.icon}</span>
+                    ${opt.text}
+                </button>
+            `).join('')}
+        </div>
+    `;
+
+    // Update progress
+    const progress = ((currentIndex + 1) / visible.length) * 100;
+    document.getElementById('progressFill').style.width = progress + '%';
+    document.getElementById('stepLabel').textContent = `Question ${currentIndex + 1} of ${visible.length}`;
+
+    // Buttons
+    document.getElementById('prevBtn').disabled = currentIndex === 0;
+    const isLast = currentIndex === visible.length - 1;
+    document.getElementById('nextBtn').style.display = isLast ? 'none' : 'flex';
+    document.getElementById('identifyBtn').style.display = isLast ? 'flex' : 'none';
+}
+
+function selectOption(qid, value) {
+    answers[qid] = value;
+    render();
+
+    // Auto-advance after short delay
+    const visible = getVisibleQuestions();
+    if (currentIndex < visible.length - 1) {
+        setTimeout(() => { currentIndex++; render(); }, 350);
+    }
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+    if (currentIndex > 0) { currentIndex--; render(); }
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+    const visible = getVisibleQuestions();
+    if (currentIndex < visible.length - 1) { currentIndex++; render(); }
+});
+
+document.getElementById('identifyBtn').addEventListener('click', async () => {
+    document.getElementById('loadingModal').style.display = 'flex';
+    const progressFill = document.querySelector('#loadingModal .progress-fill');
+    progressFill.style.width = '0%';
+    setTimeout(() => progressFill.style.width = '100%', 100);
+
+    try {
+        const response = await fetch('/questionnaire/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(answers)
+        });
+        const data = await response.json();
+
+        if (data.status === 'Healthy' || data.pest_identified === 'None') {
+            // No match — show toast and go back
+            alert('Could not identify a specific pest from your answers. Please try again with more details or upload a photo.');
+            document.getElementById('loadingModal').style.display = 'none';
+            return;
+        }
+
+        // Store result for the results page and redirect
+        setTimeout(() => { window.location.href = '/results'; }, 1500);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Something went wrong. Please try again.');
+        document.getElementById('loadingModal').style.display = 'none';
+    }
+});
+
+// Initial render
+render();
+</script>
+{% endblock %}

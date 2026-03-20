@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="{{ current_user.theme if current_user.is_authenticated and current_user.theme else 'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{% block title %}AGBOT - From Data to Harvest{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load theme from localStorage or user preference before page renders to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || '{{ current_user.theme if current_user.is_authenticated and current_user.theme else "light" }}';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            {% if current_user.is_authenticated %}
+            <div class="nav-logo">
+                <i class="fas fa-leaf"></i>
+                <div>
+                    <h2>{{ t.brand.name }}</h2>
+                    <span>{{ t.brand.tagline }}</span>
+                </div>
+            </div>
+            {% endif %}
+            {% if current_user.is_authenticated %}
+            <div class="nav-menu">
+                <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                    <i class="fas fa-home"></i> {{ t.nav.home }}
+                </a>
+                <a href="{{ url_for('scan') }}" class="nav-item {% if request.endpoint == 'scan' %}active{% endif %}">
+                    <i class="fas fa-camera"></i> {{ t.nav.scan }}
+                </a>
+                <a href="{{ url_for('history') }}" class="nav-item {% if request.endpoint == 'history' %}active{% endif %}">
+                    <i class="fas fa-history"></i> {{ t.nav.history }}
+                </a>
+                <a href="{{ url_for('about') }}" class="nav-item {% if request.endpoint == 'about' %}active{% endif %}">
+                    <i class="fas fa-info-circle"></i> {{ t.nav.about }}
+                </a>
+            </div>
+            {% endif %}
+            <div class="nav-user">
+                {% if current_user.is_authenticated %}
+                <div class="location">
+                    <i class="fas fa-map-marker-alt"></i> {{ current_user.location or 'Location' }}
+                </div>
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">1</span>
+                </div>
+                <div class="user-dropdown">
+                    <div class="user-profile" onclick="toggleUserMenu()">
+                        <i class="fas fa-user"></i> {{ current_user.name }}
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="user-menu" id="userMenu">
+                        <a href="{{ url_for('settings') }}">
+                            <i class="fas fa-cog"></i> {{ t.nav.settings }}
+                        </a>
+                        <a href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> {{ t.nav.logout }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating Action Button -->
+    {% if current_user.is_authenticated %}
+    <div class="fab-container">
+        <button class="fab-button" id="fabButton">
+            <i class="fas fa-plus"></i>
+        </button>
+        <div class="fab-menu" id="fabMenu">
+            <a href="{{ url_for('index') }}" class="fab-menu-item {% if request.endpoint == 'index' %}active{% endif %}">
+                <i class="fas fa-home"></i>
+                <span>{{ t.nav.home }}</span>
+            </a>
+            <a href="{{ url_for('scan') }}" class="fab-menu-item {% if request.endpoint == 'scan' %}active{% endif %}">
+                <i class="fas fa-camera"></i>
+                <span>{{ t.nav.scan }}</span>
+            </a>
+            <a href="{{ url_for('history') }}" class="fab-menu-item {% if request.endpoint == 'history' %}active{% endif %}">
+                <i class="fas fa-history"></i>
+                <span>{{ t.nav.history }}</span>
+            </a>
+            <a href="{{ url_for('about') }}" class="fab-menu-item {% if request.endpoint == 'about' %}active{% endif %}">
+                <i class="fas fa-info-circle"></i>
+                <span>{{ t.nav.about }}</span>
+            </a>
+            <div class="fab-menu-divider"></div>
+            <button class="fab-menu-item fab-theme-toggle" id="fabThemeToggle">
+                <i class="fas fa-moon"></i>
+                <span>Dark Mode</span>
+            </button>
+            <button class="fab-menu-item fab-notifications" onclick="alert('You have 1 new pest detection alert!')">
+                <i class="fas fa-bell"></i>
+                <span>{{ t.settings.notifications }}</span>
+                <span class="fab-badge">1</span>
+            </button>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('settings') }}" class="fab-menu-item {% if request.endpoint == 'settings' %}active{% endif %}">
+                <i class="fas fa-cog"></i>
+                <span>{{ t.nav.settings }}</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="fab-menu-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>{{ t.nav.logout }}</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+    // User dropdown menu toggle
+    function toggleUserMenu() {
+        const menu = document.getElementById('userMenu');
+        menu.classList.toggle('show');
+    }
+
+    // Close dropdown when clicking outside
+    window.addEventListener('click', function(e) {
+        if (!e.target.matches('.user-profile') && !e.target.closest('.user-profile')) {
+            const menu = document.getElementById('userMenu');
+            if (menu && menu.classList.contains('show')) {
+                menu.classList.remove('show');
+            }
+        }
+    });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

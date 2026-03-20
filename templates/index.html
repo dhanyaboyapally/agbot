@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}AGBOT - Dashboard{% endblock %}
+
+{% block content %}
+<style>
+@media (max-width: 768px) {
+    .content {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .dashboard {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .welcome-banner {
+        margin: 0 !important;
+        margin-bottom: 0 !important;
+        border-radius: 0 !important;
+        position: relative !important;
+        top: 0 !important;
+    }
+
+    .stats-grid {
+        padding: 0.5rem !important;
+        margin: 0 !important;
+        width: 100% !important;
+        gap: 0.5rem !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .stat-card {
+        border-radius: 0.5rem !important;
+        padding: 0.75rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .dashboard-content {
+        padding: 0.5rem !important;
+        margin: 0 !important;
+    }
+
+    .card {
+        border-radius: 0.5rem !important;
+        margin: 0 0 0.5rem 0 !important;
+    }
+}
+</style>
+<div class="dashboard">
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+        <div class="banner-content">
+            <h1>{{ t.dashboard.greeting }} 👋</h1>
+            <p>{{ t.dashboard.subtitle }}</p>
+            <div class="weather-info">
+                <span><i class="fas fa-calendar"></i> {{ current_date }}</span>
+                <span><i class="fas fa-thermometer-half"></i> {{ weather.temperature }}°C, {{ weather.condition }}</span>
+                <span><i class="fas fa-tint"></i> {{ weather.humidity }}% Humidity</span>
+            </div>
+        </div>
+        <a href="{{ url_for('scan') }}" class="scan-button">
+            <i class="fas fa-camera"></i> {{ t.dashboard.scanButton }}
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ t.dashboard.totalScans }}</h3>
+                <div class="stat-value">{{ user_data.total_scans }}</div>
+                <div class="stat-change positive">{{ weekly_change }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-seedling"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ t.dashboard.healthyPlants }}</h3>
+                <div class="stat-value">{{ user_data.healthy_percentage }}%</div>
+                <div class="stat-change positive">{{ monthly_change }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ t.dashboard.pestsDetected }}</h3>
+                <div class="stat-value">{{ user_data.pests_detected }}</div>
+                <div class="stat-change negative">3 {{ t.dashboard.needAttention }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ t.dashboard.aiAccuracy }}</h3>
+                <div class="stat-value">{{ user_data.ai_accuracy }}%</div>
+                <div class="stat-change">{{ t.dashboard.modelVersion }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-content">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Recent Detections -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ t.dashboard.recentDetections }}</h3>
+                    <a href="{{ url_for('history') }}" class="view-all">{{ t.dashboard.viewAll }} →</a>
+                </div>
+                <div class="detection-list">
+                    {% for detection in recent_detections %}
+                    <div class="detection-item">
+                        <div class="detection-icon {{ 'healthy' if detection.severity == 'Healthy' else 'pest' }}">
+                            <i class="fas fa-{{ 'leaf' if detection.severity == 'Healthy' else 'bug' }}"></i>
+                        </div>
+                        <div class="detection-info">
+                            <h4>{{ detection.pest }}</h4>
+                            <span>{{ detection.crop }} • {{ detection.field }}</span>
+                        </div>
+                        <div class="detection-severity {{ detection.severity.lower() }}">
+                            {{ detection.severity }}
+                        </div>
+                        <div class="detection-score">
+                            {{ detection.percentage }}%
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pest Detection Trends -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ t.dashboard.pestTrends }}</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="pestTrendsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Model Status -->
+            <div class="card ai-status">
+                <div class="status-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="status-content">
+                    <h4>{{ t.dashboard.aiModelStatus }}</h4>
+                    <p>{{ t.dashboard.aiModelDesc }}</p>
+                    <div class="status-metrics">
+                        <div class="metric">
+                            <span>{{ t.dashboard.accuracy }}</span>
+                            <strong>{{ user_data.model_accuracy }}%</strong>
+                        </div>
+                        <div class="metric">
+                            <span>{{ t.dashboard.inference }}</span>
+                            <strong>{{ user_data.inference_time }}s</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-badge active">
+                    <i class="fas fa-check-circle"></i> {{ t.dashboard.active }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- Plant Health Distribution -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ t.dashboard.plantHealthDist }}</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="healthChart"></canvas>
+                </div>
+                <div class="health-legend">
+                    <div class="legend-item">
+                        <span class="dot healthy"></span>
+                        <span>{{ t.dashboard.healthy }}</span>
+                        <strong>{{ health_distribution.healthy }}%</strong>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot pest"></span>
+                        <span>{{ t.dashboard.pestDamage }}</span>
+                        <strong>{{ health_distribution.pest_damage }}%</strong>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot disease"></span>
+                        <span>{{ t.dashboard.disease }}</span>
+                        <strong>{{ health_distribution.disease }}%</strong>
+                    </div>
+                    <div class="legend-item">
+                        <span class="dot critical"></span>
+                        <span>{{ t.dashboard.critical }}</span>
+                        <strong>{{ health_distribution.critical }}%</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ t.dashboard.quickActions }}</h3>
+                </div>
+                <div class="quick-actions">
+                    <a href="{{ url_for('scan') }}" class="action-button primary">
+                        <i class="fas fa-camera"></i> {{ t.dashboard.scanNewLeaf }}
+                    </a>
+                    <a href="{{ url_for('history') }}" class="action-button">
+                        <i class="fas fa-history"></i> {{ t.dashboard.viewHistory }}
+                    </a>
+                    <button class="action-button">
+                        <i class="fas fa-download"></i> {{ t.dashboard.exportReport }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weather Alert -->
+            <div class="card alert-card">
+                <div class="alert-icon">
+                    <i class="fas fa-cloud-sun"></i>
+                </div>
+                <div class="alert-content">
+                    <h4>{{ t.dashboard.weatherAlert }}</h4>
+                    <p>{{ t.dashboard.weatherAlertMsg }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Pest Trends Chart
+const ctx1 = document.getElementById('pestTrendsChart').getContext('2d');
+new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: {{ pest_trends.months | tojson }},
+        datasets: [{
+            label: 'Pest Detections',
+            data: {{ pest_trends['values'] | tojson }},
+            borderColor: '#ff6b35',
+            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Health Distribution Chart
+const ctx2 = document.getElementById('healthChart').getContext('2d');
+new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+        labels: ['Healthy', 'Pest Damage', 'Disease', 'Critical'],
+        datasets: [{
+            data: [
+                {{ health_distribution.healthy }},
+                {{ health_distribution.pest_damage }},
+                {{ health_distribution.disease }},
+                {{ health_distribution.critical }}
+            ],
+            backgroundColor: ['#16a34a', '#ff6b35', '#fbbf24', '#dc2626']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
